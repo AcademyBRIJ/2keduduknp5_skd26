@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBT SIMULASI ANBK - D'Ajiks Academy</title>
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- MathJax via CDN untuk Render Math/LaTeX -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    /* Custom scrollbar untuk navigasi soal */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col">
+
+  <!-- ================= HALAMAN LOGIN ================= -->
+  <div id="login-page" class="flex-grow flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md border border-gray-200">
+      <div class="text-center mb-6">
+        <h1 class="text-2xl font-bold text-sky-600">D'Ajiks Academy</h1>
+        <p class="text-sm text-gray-500">Ujian Online / CBT SIMULASI ANBK</p>
+      </div>
+      <form id="login-form" onsubmit="startExam(event)">
+        <div class="mb-4">
+          <label for="student-name" class="block text-sm font-medium text-gray-700 mb-1">Nama Peserta</label>
+          <input type="text" id="student-name" required placeholder="Masukkan nama lengkap" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500">
+        </div>
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <input type="password" id="password" required placeholder="Masukkan password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500">
+          <p id="login-error" class="text-xs text-red-500 mt-1 hidden">Password salah! Silakan coba lagi.</p>
+        </div>
+        <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 rounded-md transition duration-200">
+          Mulai Ujian
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= CONTAINER UTAMA UJIAN ================= -->
+  <div id="exam-page" class="hidden min-h-screen flex-col">
+    
+    <!-- HEADER (BIRU MUDA) -->
+    <header class="bg-sky-200 border-b border-sky-300 px-4 py-3 sticky top-0 z-10 shadow-sm">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div>
+          <h1 class="font-bold text-sky-900 text-lg">D'Ajiks Academy</h1>
+          <p class="text-sm text-sky-800">Peserta: <span id="display-name" class="font-semibold">-</span></p>
+        </div>
+        <div class="bg-white px-4 py-1.5 rounded-md border border-sky-300 shadow-inner text-center">
+          <span class="text-xs text-gray-500 uppercase block font-semibold">Sisa Waktu</span>
+          <span id="timer" class="text-lg font-bold text-red-600">25:00</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- KONTEN UTAMA -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 flex flex-col lg:flex-row gap-6">
+      
+      <!-- KIRI / ATAS: AREA SOAL & NAVIGASI -->
+      <section class="flex-grow flex flex-col bg-white rounded-lg border border-gray-300 shadow-sm overflow-hidden">
+        
+        <!-- Area Soal -->
+        <div class="p-6 flex-grow overflow-y-auto">
+          <div class="flex justify-between items-center border-b pb-3 mb-4">
+            <span id="question-number" class="text-lg font-bold text-gray-700">Soal No. 1</span>
+            <span class="text-xs bg-gray-200 text-gray-700 px-2.5 py-1 rounded">Pilihan Ganda</span>
+          </div>
+          
+          <div id="question-text" class="text-gray-800 mb-6 text-base leading-relaxed">
+            <!-- Teks Soal -->
+          </div>
+
+          <div id="options-container" class="space-y-3">
+            <!-- Pilihan Jawaban -->
+          </div>
+        </div>
+
+        <!-- Tombol Navigasi Bawah -->
+        <div class="bg-gray-50 border-t border-gray-200 p-4 flex flex-wrap justify-between items-center gap-2">
+          <button id="btn-prev" onclick="navigate(-1)" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-semibold transition">
+            Soal Sebelumnya
+          </button>
+          
+          <button id="btn-doubt" onclick="toggleDoubt()" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-4 py-2 rounded text-sm font-semibold transition">
+            Ragu-ragu
+          </button>
+          
+          <button id="btn-next" onclick="navigate(1)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold transition">
+            Soal Berikutnya
+          </button>
+        </div>
+
+      </section>
+
+      <!-- KANAN / BAWAH: DAFTAR NOMOR SOAL -->
+      <aside class="w-full lg:w-80 bg-white rounded-lg border border-gray-300 shadow-sm p-4 flex-shrink-0 flex flex-col lg:h-[calc(100vh-120px)] lg:sticky lg:top-20">
+        <h2 class="font-bold text-gray-700 mb-3 text-center border-b pb-2">Navigasi Soal</h2>
+        
+        <!-- Grid Nomor Soal -->
+        <div class="overflow-y-auto custom-scrollbar flex-grow">
+          <div id="question-grid" class="grid grid-cols-5 gap-2 p-1">
+            <!-- Kotak Nomor Soal -->
+          </div>
+        </div>
+
+        <!-- Keterangan Warna -->
+        <div class="mt-4 pt-3 border-t border-gray-200 text-xs space-y-1.5 text-gray-600">
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 bg-green-500 rounded border inline-block"></span>
+            <span>Sudah dijawab</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 bg-yellow-400 rounded border inline-block"></span>
+            <span>Ragu-ragu</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 bg-gray-100 rounded border border-gray-400 inline-block"></span>
+            <span>Belum dijawab</span>
+          </div>
+        </div>
+      </aside>
+
+    </main>
+
+  </div>
+
+  <!-- ================= HALAMAN HASIL / PEMBAHASAN ================= -->
+  <div id="result-page" class="hidden min-h-screen flex-col bg-gray-100 p-4 lg:p-8">
+    <div class="max-w-4xl mx-auto w-full bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+      <!-- Header Hasil -->
+      <div class="bg-sky-600 text-white p-6 text-center">
+        <h1 class="text-2xl font-bold">Hasil Ujian CBT - D'Ajiks Academy</h1>
+        <p class="text-sky-100 mt-1">Nama Peserta: <span id="result-name" class="font-semibold">-</span></p>
+      </div>
+
+      <!-- Detail Skor -->
+      <div class="p-6 border-b border-gray-200 bg-sky-50 flex flex-wrap justify-around items-center text-center gap-4">
+        <div>
+          <span class="text-sm text-gray-500 block font-medium">Total Skor</span>
+          <span id="final-score" class="text-4xl font-extrabold text-sky-600">0</span>
+          <span class="text-xs text-gray-400 block">Maksimal 150</span>
+        </div>
+        <div>
+          <span class="text-sm text-gray-500 block font-medium">Jawaban Benar</span>
+          <span id="correct-count" class="text-2xl font-bold text-green-600">0</span>
+          <span class="text-xs text-gray-400 block">Soal</span>
+        </div>
+        <div>
+          <span class="text-sm text-gray-500 block font-medium">Jawaban Salah / Kosong</span>
+          <span id="wrong-count" class="text-2xl font-bold text-red-600">0</span>
+          <span class="text-xs text-gray-400 block">Soal</span>
+        </div>
+      </div>
+
+      <!-- Koreksi & Pembahasan -->
+      <div class="p-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Koreksi & Pembahasan Soal</h2>
+        <div id="review-container" class="space-y-6">
+          <!-- Pembahasan per Soal Dimuat via JS -->
+        </div>
+      </div>
+
+      <!-- Footer Tombol -->
+      <div class="p-4 bg-gray-50 border-t border-gray-200 text-center">
+        <button onclick="location.reload()" class="bg-sky-600 hover:bg-sky-700 text-white px-6 py-2.5 rounded-md font-semibold transition">
+          Ulangi Ujian
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT ================= -->
+  <script>
+    // Data Bank Soal (30 Nomor)
+    const questions = [
+      {
+        id: 1,
+        question: "Soal No. 1 [C4 - Analisis]<br>Dalam pembentukan peraturan daerah tentang tata ruang kota, DPRD kabupaten/kota menemukan bahwa rancangan awal berpotensi mengorbankan kawasan resapan air demi pembangunan kawasan bisnis modern. Setelah ditelaah, rancangan tersebut bertentangan dengan prinsip keseimbangan lingkungan yang diamanatkan dalam Pembukaan UUD 1945 sebagai derivasi Pancasila. Berdasarkan ilustrasi tersebut, fungsi Pancasila yang harus dijadikan acuan utama oleh pembentuk undang-undang adalah...",
+        options: [
+          "Pandangan hidup bangsa yang memberikan pedoman tingkah laku bermasyarakat secara serasi.",
+          "Perjanjian luhur bangsa Indonesia yang telah disepakati oleh para pendiri negara.",
+          "Cita hukum (Rechtsidee) yang membimbing dan menguji seluruh produk hukum nasional.",
+          "Falsafah hidup nasional yang mempersatukan keberagaman suku dan budaya di Indonesia.",
+          "Alat pemersatu bangsa dalam menghadapi persaingan global yang semakin kompetitif."
+        ],
+        key: "C",
+        discussion: "Pancasila sebagai cita hukum (Rechtsidee) berfungsi sebagai landasan filosofis dan batu uji material bagi seluruh produk hukum di bawahnya (termasuk Perda)."
+      },
+      {
+        id: 2,
+        question: "Soal No. 2 [C5 - Evaluasi]<br>Pemerintah mengeluarkan kebijakan untuk membatasi operasional kendaraan pribadi di jalur protokol guna mengurangi polusi udara ekstrem. Kebijakan ini menuai protes dari sekelompok pemilik mobil mewah yang merasa hak kebebasannya dibatasi. Jika dievaluasi berdasarkan kedudukan Pancasila sebagai Pandangan Hidup Bangsa, manakah argumen filosofis yang paling tepat untuk mendukung kebijakan pemerintah tersebut?",
+        options: [
+          "Aturan negara dibentuk untuk memaksa seluruh warga tunduk tanpa terkecuali.",
+          "Kebebasan individu dijamin penuh oleh undang-undang tanpa batasan sosial.",
+          "Pemilik modal harus mengalah demi kepentingan ekonomi kelas bawah.",
+          "Pemerintah berhak membatasi hak warga demi target pendapatan negara.",
+          "Kepentingan bersama dan keselamatan publik berada di atas hak individu."
+        ],
+        key: "E",
+        discussion: "Pancasila sebagai Pandangan Hidup Bangsa mengajarkan bahwa keselamatan dan kepentingan bersama (bonum commune) mengungguli egoisme kebebasan individu."
+      },
+      {
+        id: 3,
+        question: "Soal No. 3 [C4 - Analisis]<br>Suatu daerah mengusulkan Peraturan Daerah yang mewajibkan seluruh aparatur sipil negara mengenakan busana keagamaan dari agama mayoritas pada hari kerja tertentu. Setelah diuji materi, Mahkamah Agung membatalkan Perda tersebut karena dianggap bertentangan dengan Pancasila. Pembatalan Perda tersebut merefleksikan kedudukan Pancasila sebagai...",
+        options: [
+          "Sumber dari segala sumber hukum negara yang membawahi seluruh regulasi.",
+          "Moral pembangunan nasional dalam mewujudkan kesejahteraan seluruh rakyat.",
+          "Jiwa dan kepribadian bangsa Indonesia yang bersifat dinamis dan inklusif.",
+          "Perjanjian luhur bangsa yang disepakati saat Sidang PPKI tahun 1945.",
+          "Cita-cita dan tujuan nasional yang tercantum dalam Pembukaan UUD 1945."
+        ],
+        key: "A",
+        discussion: "Pancasila sebagai Sumber dari Segala Sumber Hukum Negara (Pasal 2 UU No. 12/2011) menentukan bahwa tidak boleh ada peraturan perundang-undangan yang bertentangan dengan nilai Pancasila."
+      },
+      {
+        id: 4,
+        question: "Soal No. 4 [C5 - Evaluasi]<br>Di era digital, derasnya arus informasi asing memicu pergeseran nilai sosial di kalangan remaja, seperti menguatnya sikap individualistis dan mengabaikan tradisi gotong royong. Seorang analis kebijakan menyarankan agar pemerintah menetapkan regulasi filter konten ketat. Jika mengevaluasi keefektifan saran tersebut berdasarkan fungsi Pancasila sebagai Kepribadian Bangsa, langkah yang paling fundamental seharusnya adalah...",
+        options: [
+          "Menutup total akses internet asing agar budaya lokal tetap murni.",
+          "Memberikan sanksi pidana berat bagi remaja yang meniru budaya luar.",
+          "Mewajibkan seluruh lembaga pendidikan menghapus kurikulum teknologi.",
+          "Penguatan filter internal warga melalui pendidikan karakter berbasis Pancasila.",
+          "Mengganti seluruh platform digital asing dengan platform buatan dalam negeri."
+        ],
+        key: "D",
+        discussion: "Pancasila sebagai Kepribadian Bangsa berfungsi sebagai 'filter internal'. Mengendalikan dampak negatif budaya luar dilakukan lewat penguatan benteng mental/karakter diri."
+      },
+      {
+        id: 5,
+        question: "Soal No. 5 [C4 - Analisis]<br>Pada masa awal kemerdekaan, para tokoh pendiri bangsa yang berasal dari latar belakang agama, suku, dan ideologi berbeda berhasil menyetujui rumusan akhir Pancasila dalam Piagam Jakarta dengan mengubah sila pertama. Keputusan bersejarah ini menunjukkan kedudukan Pancasila sebagai Perjanjian Luhur Bangsa karena...",
+        options: [
+          "Pancasila dirumuskan secara sepihak oleh golongan mayoritas demi kemerdekaan.",
+          "Merupakan konsensus nasional yang menyatukan keragaman menjadi satu kesatuan.",
+          "Setiap pasal dalam Pancasila mengadopsi seluruh sistem hukum kolonial Belanda.",
+          "Pancasila disusun tanpa melibatkan persetujuan dari wakil-wakil daerah luar Jawa.",
+          "Rumusan tersebut hanya berlaku sementara sebelum terbentuknya lembaga DPR resmi."
+        ],
+        key: "B",
+        discussion: "Pancasila sebagai Perjanjian Luhur Bangsa berarti kesepakatan konsensus (konsensus nasional) seluruh elemen bangsa untuk mendirikan NKRI."
+      },
+      {
+        id: 6,
+        question: "Soal No. 6 [C4 - Analisis]<br>Dalam persidangan Mahkamah Konstitusi, hakim menguji sebuah undang-undang yang dinilai mendiskriminasi kelompok minoritas dalam mengakses layanan publik. Hakim membatalkan pasal diskriminatif tersebut karena tidak sesuai dengan asas keadilan sosial dalam Pancasila. Dalam kasus ini, Pancasila menjalankan kedudukannya sebagai...",
+        options: [
+          "Dasar moral individu dalam menjalankan tugas administratif ketatanegaraan.",
+          "Satu-satunya sumber doktrin politik resmi yang wajib dihafalkan rakyat.",
+          "Sistem ideologi tertutup yang tidak menerima penafsiran hukum baru.",
+          "Simbol pemersatu yang digunakan hanya untuk upacara seremonial kenegaraan.",
+          "Norma fundamental negara (Staatsfundamentalnorm) yang menguji norma di bawahnya."
+        ],
+        key: "E",
+        discussion: "Pancasila sebagai Staatsfundamentalnorm memuat norma dasar yang memvalidasi dan menguji pembentukan norma hukum di bawahnya."
+      },
+      {
+        id: 7,
+        question: "Soal No. 7 [C5 - Evaluasi]<br>Sebuah organisasi kemasyarakatan menolak program vaksinasi massal yang dicanangkan pemerintah dengan alasan melanggar kebebasan privat. Jika dianalisis dan dievaluasi berdasarkan kedudukan Pancasila sebagai Dasar Negara, manakah tindakan negara yang paling valid secara konstitusional?",
+        options: [
+          "Membiarkan ormas tersebut karena hak asasi warga negara tidak dapat dibatasi.",
+          "Membubarkan ormas secara mendadak tanpa melalui proses peradilan hukum.",
+          "Melaksanakan edukasi dan kewajiban hukum demi mewujudkan keselamatan umum.",
+          "Menghentikan seluruh program vaksinasi agar tidak memicu konflik horizontal.",
+          "Mengenakan denda finansial langsung tanpa dasar undang-undang yang jelas."
+        ],
+        key: "C",
+        discussion: "Pancasila sebagai Dasar Negara memberikan wewenang penuh pada negara untuk menegakkan aturan demi melindungi keselamatan jiwa warga negara secara umum."
+      },
+      {
+        id: 8,
+        question: "Soal No. 8 [C4 - Analisis]<br>Dalam proyek pembangunan bendungan skala nasional, terjadi konflik lahan antara warga lokal dan pihak pengembang. Pemerintah mengutamakan jalur musyawarah mufakat dengan memberikan ganti rugi yang adil serta relokasi yang layak. Pendekatan ini mencerminkan fungsi Pancasila sebagai Pandangan Hidup Bangsa, khususnya dalam hal...",
+        options: [
+          "Menyelesaikan konflik sosial melalui cara-cara kekeluargaan dan keadilan.",
+          "Mengedepankan kekuasaan mutlak otoritas pemerintah atas tanah warga.",
+          "Memaksakan kehendak efisiensi proyek demi mengejar target pertumbuhan ekonomi.",
+          "Menyerahkan sepenuhnya penyelesaian konflik pada mekanisme pasar bebas.",
+          "Menunda pembangunan secara permanen tanpa adanya kejelasan solusi konkret."
+        ],
+        key: "A",
+        discussion: "Pandangan Hidup Bangsa mengedepankan asas musyawarah kekeluargaan dan penegakan keadilan tanpa merugikan martabat manusia."
+      },
+      {
+        id: 9,
+        question: "Soal No. 9 [C5 - Evaluasi]<br>Suatu negara tetangga menawarkan bantuan dana hibah pembangunan prasarana dengan syarat Indonesia harus memberikan hak eksklusif pangkalan militer di wilayah perbatasan. Jika mengevaluasi tawaran ini berdasarkan kedudukan Pancasila sebagai Cita-Cita dan Tujuan Bangsa, respon terbaik pemerintah adalah...",
+        options: [
+          "Menerima hibah tersebut demi mempercepat pembangunan ekonomi kawasan terluar.",
+          "Menolak persyaratannya karena mengancam kedaulatan dan politik bebas aktif.",
+          "Menerima syarat militer tersebut selama dana hibah yang diberikan berukuran sangat besar.",
+          "Menolak hibah dan memutuskan seluruh hubungan diplomatik dengan negara tersebut.",
+          "Menyerahkan keputusan sepenuhnya kepada referendum publik warga perbatasan."
+        ],
+        key: "B",
+        discussion: "Cita-cita dan Tujuan Bangsa menuntut penjagaan kedaulatan NKRI serta pelaksanaan politik luar negeri yang bebas dan aktif."
+      },
+      {
+        id: 10,
+        question: "Soal No. 10 [C4 - Analisis]<br>Fenomena penyebaran berita bohong (hoaks) yang berpotensi memecah belah kerukunan umat beragama semakin marak di media sosial. Tindakan pencegahan yang sesuai dengan kedudukan Pancasila sebagai Ideologi Terbuka adalah...",
+        options: [
+          "Melarang secara total penggunaan media sosial di seluruh wilayah Indonesia.",
+          "Menangkap semua akun yang mengkritik kebijakan sosial pemerintah.",
+          "Membentuk lembaga sensor tunggal yang mengontrol seluruh informasi publik.",
+          "Mengembangkan literasi digital berlandaskan etika dan keterbukaan kritis.",
+          "Membiarkan hoaks menyebar sebagai bentuk kebebasan berekspresi warga."
+        ],
+        key: "D",
+        discussion: "Pancasila sebagai Ideologi Terbuka menyikapi perkembangan teknologi dengan respon adaptif dan mencerahkan (literasi etis), bukan dengan tindakan represif total."
+      },
+      {
+        id: 11,
+        question: "Soal No. 11 [C4 - Analisis]<br>Di sebuah daerah, terdapat kelompok masyarakat yang menolak kehadiran pendatang dari suku lain untuk bekerja di wilayah mereka. Kelompok tersebut merasa hak ekonomi lokalnya terancam. Jika dikaji berdasarkan Pancasila sebagai Pemersatu Bangsa, pandangan kelompok tersebut bertentangan dengan prinsip...",
+        options: [
+          "Nusantara sebagai satu kesatuan sosial, budaya, dan ekonomi yang utuh.",
+          "Hak otonomi daerah mutlak yang memberi wewenang mengusir pendatang.",
+          "Pemberlakuan hukum adat di atas regulasi hukum nasional yang berlaku.",
+          "Persaingan bebas tanpa campur tangan dan perlindungan dari negara.",
+          "Pembatasan mobilitas warga demi menjaga keaslian identitas daerah."
+        ],
+        key: "A",
+        discussion: "Sebagai Pemersatu Bangsa, Pancasila menjamin bahwa seluruh wilayah Indonesia adalah satu kesatuan ruang sosial, budaya, dan ekonomi bagi warga negara."
+      },
+      {
+        id: 12,
+        question: "Soal No. 12 [C5 - Evaluasi]<br>Pemerintah berencana menyusun undang-undang tentang efisiensi tata kelola birokrasi digital. Dalam rancangannya, beberapa mekanisme pelayanan publik di daerah terpencil yang belum memiliki akses internet diintegrasikan secara penuh ke aplikasi online. Bagaimana Anda mengevaluasi rancangan UU ini dari perspektif Pancasila sebagai Dasar Negara?",
+        options: [
+          "Sangat baik karena digitalisasi adalah syarat mutlak kemajuan bangsa modern.",
+          "Harus dibatalkan total karena teknologi bertentangan dengan nilai tradisional.",
+          "Sudah sempurna karena menghemat anggaran belanja daerah secara signifikan.",
+          "Tidak perlu dikritik karena merupakan wewenang penuh lembaga pembuat UU.",
+          "Perlu diperbaiki agar tidak menciptakan diskriminasi akses bagi daerah 3T."
+        ],
+        key: "E",
+        discussion: "Dasar negara mengamanatkan keadilan sosial (Sila 5). Kebijakan tidak boleh mendiskriminasi masyarakat yang berada di wilayah terbelakang/3T."
+      },
+      {
+        id: 13,
+        question: "Soal No. 13 [C4 - Analisis]<br>Seorang ilmuwan Indonesia berhasil menemukan teknologi pengolahan limbah industri murah dan ramah lingkungan. Ia menolak menjual hak patennya ke perusahaan asing dengan harga tinggi dan memilih membagikannya secara murah kepada UMKM lokal. Tindakan ilmuwan ini merefleksikan pengamalan Pancasila sebagai...",
+        options: [
+          "Dasar formal hukum tata negara yang mengikat secara administratif.",
+          "Perjanjian politik yang disepakati oleh elit pimpinan organisasi.",
+          "Ethos kerja dan moralitas nasional dalam pengabdian kepada bangsa.",
+          "Instrumen geopolitik untuk memenangi persaingan ekonomi global.",
+          "Sumber doktrin yang diwajibkan oleh undang-undang kepatenan."
+        ],
+        key: "C",
+        discussion: "Tindakan ilmuwan mencerminkan kepribadian bangsa dan ethos kerja Pancasila yang mendahulukan kemaslahatan masyarakat ketimbang keuntungan finansial pribadi."
+      },
+      {
+        id: 14,
+        question: "Soal No. 14 [C5 - Evaluasi]<br>Dalam pembahasan RAPBD, terjadi perdebatan sengit antara alokasi anggaran untuk perbaikan sekolah rusak dengan alokasi pembangunan gedung dinas baru. Jika dievaluasi berdasarkan nilai-nilai Pancasila sebagai Pandangan Hidup Bangsa, prioritas kebijakan yang harus diambil adalah...",
+        options: [
+          "Membagi dua anggaran secara sama rata tanpa melihat tingkat urgensi.",
+          "Mengutamakan perbaikan sekolah demi peningkatan kualitas SDM publik.",
+          "Mendahulukan gedung dinas baru demi kenyamanan aparatur birokrasi.",
+          "Menunda kedua proyek sampai ada ketersediaan dana sisa di tahun depan.",
+          "Menggunakan dana pinjaman luar negeri untuk menyelesaikan keduanya."
+        ],
+        key: "B",
+        discussion: "Pandangan hidup Pancasila memprioritaskan kepentingan dasar rakyat banyak (pendidikan SDM) di atas fasilitas aparatur."
+      },
+      {
+        id: 15,
+        question: "Soal No. 15 [C4 - Analisis]<br>Konsep 'Bhinneka Tunggal Ika' yang terpatri pada lambang negara Garuda Pancasila memiliki keterkaitan erat dengan kedudukan Pancasila sebagai Jati Diri Bangsa. Hubungan filosofis antara keduanya terlihat pada...",
+        options: [
+          "Penetapan satu kebudayaan daerah sebagai budaya tunggal nasional.",
+          "Penghapusan seluruh perbedaan suku demi keseragaman identitas sosial.",
+          "Penolakan terhadap seluruh bentuk kerja sama budaya dengan negara luar.",
+          "Pengakuan keragaman sebagai kekayaan yang disatukan oleh nilai bersama.",
+          "Pemberlakuan sistem hukum privat yang berbeda berdasarkan kelas ekonomi."
+        ],
+        key: "D",
+        discussion: "Jati diri bangsa menghargai keberagaman sebagai modal kekayaan yang dipersatukan dalam ikatan nilai-nilai bersama Pancasila."
+      },
+      {
+        id: 16,
+        question: "Soal No. 16 [C4 - Analisis]<br>Seseorang dituduh melakukan tindak pidana karena mengkritik kebijakan anggaran pemerintah di media sosial. Dalam proses peradilan, pengacara tersangka mendasarkan pembelaannya pada nilai Pancasila sila keempat tentang kebebasan berpendapat yang bertanggung jawab. Kedudukan Pancasila dalam argumen pembelaan tersebut adalah sebagai...",
+        options: [
+          "Sumber nilai filosofis perlindungan hak-hak konstitusional warga.",
+          "Satu-satunya pasal Kitab Undang-Undang Hukum Pidana (KUHP).",
+          "Peraturan teknis tata cara penyampaian pendapat di muka umum.",
+          "Aturan hukum acara pidana dalam proses persidangan pengadilan.",
+          "Yurisprudensi tetap yang tidak dapat diganggu gugat oleh hakim."
+        ],
+        key: "A",
+        discussion: "Pancasila berfungsi sebagai sumber nilai yang melandasi dan membimbing penafsiran perlindungan hak-hak konstitusional warga."
+      },
+      {
+        id: 17,
+        question: "Soal No. 17 [C5 - Evaluasi]<br>Sejumlah pemuda di suatu desa mendirikan koperasi simpan pinjam berbasis gotong royong untuk membebaskan warga dari jeratan rentenir. Koperasi ini menerapkan sistem pembagian hasil yang transparan dan adil. Ditinjau dari fungsi Pancasila sebagai Paradigma Pembangunan Ekonomi, bagaimana Anda menilai inisiatif ini?",
+        options: [
+          "Kurang efektif karena tidak menggunakan sistem perbankan kapitalis modern.",
+          "Menhambat pertumbuhan ekonomi karena menolak prinsip persaingan bebas.",
+          "Perlu dilarang karena berpotensi menyaingi lembaga keuangan resmi negara.",
+          "Hanya bernilai sosial tetapi tidak memberikan dampak ekonomi nyata.",
+          "Tepat karena mewujudkan ekonomi kerakyatan berasaskan kekeluargaan."
+        ],
+        key: "E",
+        discussion: "Paradigma pembangunan ekonomi Pancasila mendasarkan diri pada pasal 33 UUD 1945, yaitu ekonomi kerakyatan berasaskan kekeluargaan."
+      },
+      {
+        id: 18,
+        question: "Soal No. 18 [C4 - Analisis]<br>Ketika terjadi bencana alam nasional, berbagai organisasi masyarakat dari latar belakang agama dan etnis yang berbeda bahu-membahu menyalurkan bantuan tanpa membeda-bedakan korban. Fenomena ini menunjukkan keberhasilan fungsi Pancasila sebagai...",
+        options: [
+          "Dasar hukum formal perizinan pendirian organisasi kemasyarakatan.",
+          "Sistem ideologi tertutup yang membatasi bantuan dari pihak asing.",
+          "Integrator sosial yang merekatkan persatuan dalam aksi kemanusiaan.",
+          "Perjanjian politik antarpartai dalam pembagian kekuasaan daerah.",
+          "Instrumen birokrasi negara untuk mengumpulkan dana bantuan bencana."
+        ],
+        key: "C",
+        discussion: "Pancasila sebagai pemersatu/integrator sosial menyatukan keragaman elemen masyarakat untuk saling bekerja sama dalam aksi sosial-kemanusiaan."
+      },
+      {
+        id: 19,
+        question: "Soal No. 19 [C5 - Evaluasi]<br>Dalam sebuah rapat RT, terjadi perbedaan pendapat mengenai penetapan iuran bulanan. Ketua RT langsung mengambil keputusan secara sepihak tanpa mendengar keberatan warga miskin. Jika dievaluasi berdasarkan Pancasila sebagai Pandangan Hidup, tindakan Ketua RT tersebut...",
+        options: [
+          "Sudah benar karena Ketua RT memiliki wewenang penuh mengambil keputusan.",
+          "Tepat demi mempercepat jalannya rapat agar tidak berlarut-larut.",
+          "Dapat dibenarkan selama uang iuran digunakan untuk kepentingan umum.",
+          "Cacat prosedur karena mengabaikan musyawarah dan empati sosial.",
+          "Harus didukung oleh seluruh warga demi menjaga kewibawaan pimpinan."
+        ],
+        key: "D",
+        discussion: "Tindakan sepihak melanggar musyawarah untuk mufakat (Sila 4) dan kepedulian sosial (Sila 5) yang merupakan inti pandangan hidup Pancasila."
+      },
+      {
+        id: 20,
+        question: "Soal No. 20 [C4 - Analisis]<br>Pancasila dikatakan memuat nilai dasar, nilai instrumental, dan nilai praksis. Dalam konteks Amandemen UUD 1945 yang menambahkan pasal-pasal perlindungan Hak Asasi Manusia, posisi pasal-pasal baru tersebut dalam struktur ideologi Pancasila adalah sebagai...",
+        options: [
+          "Nilai dasar yang mengubah struktur filosofis awal Pancasila.",
+          "Nilai instrumental yang menjabarkan lebih lanjut nilai dasar Pancasila.",
+          "Nilai praksis yang hanya berlaku dalam tindakan harian individu.",
+          "Dogma mutlak yang tidak dapat diperbarui oleh lembaga negara.",
+          "Substansi politik yang terpisah dari Pancasila dan Pembukaan."
+        ],
+        key: "B",
+        discussion: "Pasal-pasal UUD 1945 merupakan nilai instrumental yang menafsirkan dan merincikan nilai dasar Pancasila ke dalam norma hukum."
+      },
+      {
+        id: 21,
+        question: "Soal No. 21 [C4 - Analisis]<br>Pemerintah menetapkan program pemerataan akses pendidikan di wilayah pulau terluar dengan memberikan beasiswa penuh dan pengiriman guru berkualitas. Kebijakan ini dikaji dari fungsi Pancasila sebagai Cita-Cita dan Tujuan Bangsa bertujuan untuk...",
+        options: [
+          "Mencerdaskan kehidupan bangsa dan mewujudkan keadilan sosial.",
+          "Memenuhi syarat administratif bantuan pembangunan dari UNICEF.",
+          "Mengurangi beban anggaran pemerintah pusat di sektor pendidikan.",
+          "Memastikan seluruh lulusan sekolah bekerja di instansi pemerintah.",
+          "Mencegah warga terluar berpindah kewarganegaraan ke negara tetangga."
+        ],
+        key: "A",
+        discussion: "Pembukaan UUD 1945 alinea IV menegaskan cita-cita dan tujuan bangsa yaitu mencerdaskan kehidupan bangsa dan mewujudkan keadilan sosial."
+      },
+      {
+        id: 22,
+        question: "Soal No. 22 [C5 - Evaluasi]<br>Seorang anggota parlemen mengusulkan pembentukan undang-undang yang melarang penggunaan bahasa daerah di ruang publik agar masyarakat fokus menggunakan Bahasa Indonesia. Bagaimana Anda mengevaluasi usulan tersebut berdasarkan Pancasila sebagai Kepribadian Bangsa?",
+        options: [
+          "Usulan tersebut sangat baik untuk mempercepat kesatuan bahasa nasional.",
+          "Usulan tersebut wajar karena bahasa daerah tidak memiliki nilai ekonomis.",
+          "Usulan tersebut keliru karena bahasa daerah adalah bagian kekayaan budaya.",
+          "Usulan tersebut harus diterima demi efisiensi komunikasi politik kenegaraan.",
+          "Usulan tersebut tidak perlu ditanggapi karena bukan urusan penting negara."
+        ],
+        key: "C",
+        discussion: "Pancasila sebagai Kepribadian Bangsa menghargai dan melestarikan kekayaan bahasa lokal/daerah sebagai kekayaan identitas kebudayaan nasional."
+      },
+      {
+        id: 23,
+        question: "Soal No. 23 [C4 - Analisis]<br>Proses pembentukan UU Cipta Kerja sempat memicu gelombang protes karena dinilai kurang melibatkan partisipasi publik yang bermakna (meaningful participation). Jika dikaitkan dengan kedudukan Pancasila sebagai Dasar Negara, asas pembuatan regulasi yang dilanggar adalah...",
+        options: [
+          "Sifat mengikat mutlak seluruh produk hukum tanpa pengujian.",
+          "Kedaulatan birokrasi dalam menentukan nasib perekonomian rakyat.",
+          "Monopoli negara atas penafsiran tunggal undang-undang.",
+          "Penyelarasan penuh hukum nasional dengan standar pasar global.",
+          "Prinsip kerakyatan dan musyawarah dalam proses pembuatan kebijakan."
+        ],
+        key: "E",
+        discussion: "Sila ke-4 menegaskan asas kerakyatan dan musyawarah yang mengharuskan adanya partisipasi publik secara nyata dalam pembentukan undang-undang."
+      },
+      {
+        id: 24,
+        question: "Soal No. 24 [C5 - Evaluasi]<br>Sebuah perusahaan tambang beroperasi di dekat pemukiman adat dan menyebabkan pencemaran sumber air warga. Perusahaan berkali-kali mangkir dari tanggung jawab dengan alasan telah memiliki izin usaha dari pemerintah. Jika dievaluasi berdasarkan nilai Ketuhanan dan Kemanusiaan dalam Pancasila, tindakan yang benar adalah...",
+        options: [
+          "Membiarkan pencemaran terjadi demi menjaga iklim investasi daerah.",
+          "Mencabut izin dan menindak tegas perusahaan demi keselamatan warga.",
+          "Meminta warga adat untuk pindah mandiri tanpa diberikan ganti rugi.",
+          "Menutup seluruh kegiatan industri tambang di seluruh wilayah Indonesia.",
+          "Memberikan keringanan pajak bagi perusahaan agar mau membenahi limbah."
+        ],
+        key: "B",
+        discussion: "Nilai Ketuhanan dan Kemanusiaan menempatkan keselamatan hidup manusia di atas kepentingan bisnis dan pertimbangan administratif semata."
+      },
+      {
+        id: 25,
+        question: "Soal No. 25 [C4 - Analisis]<br>Kedudukan Pancasila sebagai 'Meja Statis' dan 'Leitstar Dinamis' pernah disampaikan oleh Ir. Soekarno. Makna dari Pancasila sebagai Leitstar Dinamis adalah...",
+        options: [
+          "Teks Pancasila dapat diubah kapan saja sesuai keinginan penguasa.",
+          "Pancasila tidak lagi relevan ketika negara telah mencapai kemakmuran.",
+          "Sistem hukum Indonesia harus selalu berkiblat pada negara maju.",
+          "Pancasila memberi arah penuntun dalam menjawab tantangan zaman.",
+          "Pancasila hanya berfungsi saat negara berada dalam keadaan bahaya."
+        ],
+        key: "D",
+        discussion: "Leitstar Dinamis berarti Pancasila bertindak sebagai bintang penuntun yang mengarahkan bangsa mengarungi perubahan zaman."
+      },
+      {
+        id: 26,
+        question: "Soal No. 26 [C4 - Analisis]<br>Dalam konteks pertahanan negara, sistem Sishankamrata (Sistem Pertahanan dan Keamanan Rakyat Semesta) memosisikan seluruh warga negara sebagai komponen pendukung/pendukung utama sesuai regulasi. Landasan filosofis sistem ini berakar dari kedudukan Pancasila sebagai...",
+        options: [
+          "Instrumen militer tunggal dalam menjaga ketertiban kawasan ASEAN.",
+          "Doktrin politik luar negeri bebas aktif di tengah perang dingin.",
+          "Falsafah pemersatu yang menempatkan bela negara sebagai hak dan kewajiban.",
+          "Aturan teknis operasional bagi TNI dan POLRI di medan pertempuran.",
+          "Syarat mutlak bergabungnya Indonesia menjadi anggota PBB."
+        ],
+        key: "C",
+        discussion: "Falsafah pemersatu Pancasila menegaskan kebersamaan seluruh elemen bangsa dalam mempertahankan kedaulatan tanah air."
+      },
+      {
+        id: 27,
+        question: "Soal No. 27 [C5 - Evaluasi]<br>Di era keterbukaan informasi, muncul wacana untuk mengganti sistem demokrasi Pancasila menjadi sistem demokrasi liberal murni tanpa pembatasan etika. Ditinjau dari fungsi Pancasila sebagai Dasar Negara, konsekuensi filosofis dari wacana tersebut adalah...",
+        options: [
+          "Mencabut jati diri bangsa dan merusak tatanan keadilan sosial.",
+          "Meningkatkan kualitas kesejahteraan rakyat secara cepat dan drastis.",
+          "Memperkuat sistem pertahanan nasional dari ancaman ideologi asing.",
+          "Menjadikan Indonesia sebagai pusat pertumbuhan ekonomi dunia.",
+          "Menghilangkan praktik korupsi, kolusi, dan nepotisme secara permanen."
+        ],
+        key: "A",
+        discussion: "Demokrasi liberal mengabaikan etika kolektif dan keadilan sosial Pancasila, sehingga akan merusak tatanan dan jati diri bangsa."
+      },
+      {
+        id: 28,
+        question: "Soal No. 28 [C4 - Analisis]<br>Pemerintah membuat program digitalisasi pelayanan kesehatan di Puskesmas. Namun, layanan manual tetap disediakan bagi warga lansia yang gagap teknologi. Kebijakan pelayanan ganda ini mencerminkan pengamalan Pancasila sebagai Pandangan Hidup Bangsa karena...",
+        options: [
+          "Memaksa lansia untuk belajar menggunakan smartphone secara mandiri.",
+          "Mewujudkan kemanusiaan yang adil dan beradab dalam pelayanan publik.",
+          "Menghabiskan anggaran daerah demi mempertahankan metode lama.",
+          "Menolak modernisasi teknologi di sektor pelayanan kesehatan masyarakat.",
+          "Membatasi akses anak muda untuk mendapatkan pelayanan digital modern."
+        ],
+        key: "B",
+        discussion: "Aksi memperhatikan keterbatasan kelompok lansia merefleksikan nilai Kemanusiaan yang Adil dan Beradab (Sila 2)."
+      },
+      {
+        id: 29,
+        question: "Soal No. 29 [C5 - Evaluasi]<br>Sebuah proyek jalan tol dibangun menembus kawasan hutan lindung. Pemerintah daerah beralasan hal itu demi mempercepat efisiensi logistik. Namun, pemerhati lingkungan menilai tindakan itu berisiko memicu bencana banjir besar. Jika dievaluasi berdasarkan Pancasila sebagai Paradigma Pembangunan, keputusan yang seimbang adalah...",
+        options: [
+          "Meneruskan pembangunan tol tanpa memedulikan amdal lingkungan.",
+          "Membatalkan seluruh pembangunan infrastruktur jalan tol di Indonesia.",
+          "Menyerahkan keputusan penutupan hutan kepada investor swasta.",
+          "Mengkaji ulang rute jalan tol dengan menerapkan prinsip berkelanjutan.",
+          "Mengabaikan protes pemerhati lingkungan demi kemajuan ekonomi daerah."
+        ],
+        key: "D",
+        discussion: "Paradigma pembangunan Pancasila menyeimbangkan kemajuan ekonomi dengan kelestarian alam lingkungan (keadilan antargenerasi)."
+      },
+      {
+        id: 30,
+        question: "Soal No. 30 [C4 - Analisis]<br>Setiap kali memperingati Hari Lahir Pancasila pada 1 Juni, masyarakat diingatkan kembali akan proses penggalian nilai-nilai nusantara oleh para perumus bangsa. Hal ini menegaskan bahwa nilai-nilai Pancasila tidak diimpor dari luar, melainkan berkedudukan sebagai...",
+        options: [
+          "Produk hukum tiruan dari Piagam PBB tahun 1945.",
+          "Ideologi impor yang dipaksakan oleh pemerintah kolonial.",
+          "Kesepakatan sementara yang berlaku hanya pada masa kemerdekaan.",
+          "Dogma agama tunggal yang wajib dianut seluruh warga negara.",
+          "Kristalisasi nilai budaya dan tradisi luhur bangsa Indonesia."
+        ],
+        key: "E",
+        discussion: "Pancasila digali langsung dari nilai-nilai luhur dan tradisi budaya bangsa Indonesia sendiri."
+      }
+    ];
+
+    // State Aplikasi
+    let currentIndex = 0;
+    let answers = {};
+    let doubts = {};
+    let timeRemaining = 25 * 60; // 25 Menit dalam detik
+    let timerInterval = null;
+    let studentName = "";
+
+    // Fungsi Start Ujian & Validasi Password
+    function startExam(event) {
+      event.preventDefault();
+      const inputName = document.getElementById('student-name').value;
+      const inputPass = document.getElementById('password').value;
+      const errorMsg = document.getElementById('login-error');
+
+      if (inputPass !== 'skd26') {
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      errorMsg.classList.add('hidden');
+      studentName = inputName;
+      document.getElementById('display-name').textContent = studentName;
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('login-page').classList.remove('flex');
+      document.getElementById('exam-page').classList.remove('hidden');
+      document.getElementById('exam-page').classList.add('flex');
+
+      initGrid();
+      loadQuestion();
+      startTimer();
+    }
+
+    // Timer Countdown
+    function startTimer() {
+      const timerElement = document.getElementById('timer');
+      timerInterval = setInterval(() => {
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          alert("Waktu pengerjaan ujian telah habis!");
+          finishExam();
+          return;
+        }
+        timeRemaining--;
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    // Inisialisasi Navigasi Grid
+    function initGrid() {
+      const grid = document.getElementById('question-grid');
+      grid.innerHTML = '';
+
+      questions.forEach((_, index) => {
+        const btn = document.createElement('button');
+        btn.id = `grid-btn-${index}`;
+        btn.textContent = index + 1;
+        btn.onclick = () => jumpToQuestion(index);
+        btn.className = "h-10 w-full rounded font-bold text-sm flex items-center justify-center border transition";
+        grid.appendChild(btn);
+      });
+      updateGridStyles();
+    }
+
+    // Memuat Soal
+    function loadQuestion() {
+      const q = questions[currentIndex];
+      document.getElementById('question-number').textContent = `Soal No. ${currentIndex + 1}`;
+      document.getElementById('question-text').innerHTML = q.question;
+
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+
+      const labels = ['A', 'B', 'C', 'D', 'E'];
+      q.options.forEach((opt, optIndex) => {
+        const label = labels[optIndex];
+        const isSelected = answers[currentIndex] === label;
+
+        const optionDiv = document.createElement('div');
+        optionDiv.onclick = () => selectOption(label);
+        optionDiv.className = `flex items-start p-3 border rounded-lg cursor-pointer transition ${
+          isSelected 
+            ? 'bg-sky-50 border-sky-500 text-sky-900 font-medium' 
+            : 'hover:bg-gray-50 border-gray-200 text-gray-700'
+        }`;
+
+        optionDiv.innerHTML = `
+          <div class="w-7 h-7 rounded-full border flex items-center justify-center text-sm mr-3 flex-shrink-0 mt-0.5 ${
+            isSelected ? 'bg-sky-500 text-white border-sky-500' : 'border-gray-400 bg-white'
+          }">${label}</div>
+          <div class="text-sm sm:text-base flex-grow">${opt}</div>
+        `;
+        optionsContainer.appendChild(optionDiv);
+      });
+
+      // Update State Navigasi
+      document.getElementById('btn-prev').disabled = currentIndex === 0;
+      document.getElementById('btn-prev').classList.toggle('opacity-50', currentIndex === 0);
+
+      const nextBtn = document.getElementById('btn-next');
+      if (currentIndex === questions.length - 1) {
+        nextBtn.textContent = 'Selesai';
+        nextBtn.className = "bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-semibold transition";
+      } else {
+        nextBtn.textContent = 'Soal Berikutnya';
+        nextBtn.className = "bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded text-sm font-semibold transition";
+      }
+
+      updateGridStyles();
+
+      // Render ulang MathJax jika terdapat ekspresi matematika/LaTeX
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    // Memilih Jawaban
+    function selectOption(label) {
+      answers[currentIndex] = label;
+      loadQuestion();
+    }
+
+    // Navigasi Maju/Mundur
+    function navigate(direction) {
+      if (direction === 1 && currentIndex === questions.length - 1) {
+        if (confirm("Apakah Anda yakin ingin menyelesaikan ujian?")) {
+          finishExam();
+        }
+        return;
+      }
+
+      const targetIndex = currentIndex + direction;
+      if (targetIndex >= 0 && targetIndex < questions.length) {
+        currentIndex = targetIndex;
+        loadQuestion();
+      }
+    }
+
+    // Jump ke nomor tertentu
+    function jumpToQuestion(index) {
+      currentIndex = index;
+      loadQuestion();
+    }
+
+    // Toggle Ragu-Ragu
+    function toggleDoubt() {
+      doubts[currentIndex] = !doubts[currentIndex];
+      updateGridStyles();
+    }
+
+    // Update Warna Kotak Navigasi
+    function updateGridStyles() {
+      questions.forEach((_, index) => {
+        const btn = document.getElementById(`grid-btn-${index}`);
+        if (!btn) return;
+
+        const isCurrent = index === currentIndex;
+        const isAnswered = answers[index] !== undefined;
+        const isDoubt = !!doubts[index];
+
+        btn.className = "h-10 w-full rounded font-bold text-sm flex items-center justify-center border transition ";
+
+        if (isCurrent) {
+          btn.classList.add('ring-2', 'ring-sky-600', 'ring-offset-1');
+        }
+
+        if (isDoubt) {
+          btn.classList.add('bg-yellow-400', 'text-gray-900', 'border-yellow-500');
+        } else if (isAnswered) {
+          btn.classList.add('bg-green-500', 'text-white', 'border-green-600');
+        } else {
+          btn.classList.add('bg-gray-100', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-200');
+        }
+      });
+    }
+
+    // Menyelesaikan Ujian dan Menampilkan Hasil
+    function finishExam() {
+      clearInterval(timerInterval);
+
+      let correctCount = 0;
+      questions.forEach((q, index) => {
+        if (answers[index] === q.key) {
+          correctCount++;
+        }
+      });
+
+      const wrongCount = questions.length - correctCount;
+      const score = correctCount * 5;
+
+      document.getElementById('result-name').textContent = studentName;
+      document.getElementById('final-score').textContent = score;
+      document.getElementById('correct-count').textContent = correctCount;
+      document.getElementById('wrong-count').textContent = wrongCount;
+
+      renderReview();
+
+      document.getElementById('exam-page').classList.add('hidden');
+      document.getElementById('exam-page').classList.remove('flex');
+      document.getElementById('result-page').classList.remove('hidden');
+      document.getElementById('result-page').classList.add('flex');
+
+      if (window.MathJax) {
+        MathJax.typesetPromise();
+      }
+    }
+
+    // Render Pembahasan
+    function renderReview() {
+      const reviewContainer = document.getElementById('review-container');
+      reviewContainer.innerHTML = '';
+
+      const labels = ['A', 'B', 'C', 'D', 'E'];
+
+      questions.forEach((q, index) => {
+        const userAnswer = answers[index] || "Tidak Dijawab";
+        const isCorrect = userAnswer === q.key;
+
+        const item = document.createElement('div');
+        item.className = `p-4 rounded-lg border ${isCorrect ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200'}`;
+
+        let optionsHtml = '';
+        q.options.forEach((opt, optIndex) => {
+          const lbl = labels[optIndex];
+          let badge = '';
+          let textClass = 'text-gray-700';
+
+          if (lbl === q.key) {
+            badge = '<span class="ml-2 text-xs bg-green-600 text-white px-2 py-0.5 rounded font-bold">Kunci Jawaban</span>';
+            textClass = 'font-semibold text-green-800';
+          }
+          if (lbl === userAnswer && !isCorrect) {
+            badge = '<span class="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded font-bold">Jawaban Anda</span>';
+            textClass = 'font-semibold text-red-800';
+          }
+
+          optionsHtml += `
+            <div class="text-sm my-1 flex items-start ${textClass}">
+              <span class="w-6 font-bold flex-shrink-0">${lbl}.</span>
+              <span class="flex-grow">${opt} ${badge}</span>
+            </div>
+          `;
+        });
+
+        item.innerHTML = `
+          <div class="flex justify-between items-center mb-2 border-b pb-2">
+            <span class="font-bold text-gray-800">Soal No. ${index + 1}</span>
+            <span class="text-xs px-2 py-1 rounded font-bold ${isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+              ${isCorrect ? 'BENAR (+5)' : 'SALAH / KOSONG (0)'}
+            </span>
+          </div>
+          <div class="text-sm text-gray-800 mb-3">${q.question}</div>
+          <div class="mb-3 bg-white p-3 rounded border border-gray-200">${optionsHtml}</div>
+          <div class="text-xs bg-sky-50 text-sky-900 p-3 rounded border border-sky-200">
+            <span class="font-bold block mb-1">Rasionalisasi / Pembahasan:</span>
+            ${q.discussion}
+          </div>
+        `;
+
+        reviewContainer.appendChild(item);
+      });
+    }
+  </script>
+</body>
+</html>
